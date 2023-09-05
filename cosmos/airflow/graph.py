@@ -194,25 +194,6 @@ def build_airflow_graph(
     task_or_group: TaskGroup | BaseOperator
 
     for node_id, node in nodes.items():
-<<<<<<< HEAD
-        task_meta = create_task_metadata(node=node, execution_mode=execution_mode, args=task_args)
-        if task_meta and node.resource_type != DbtResourceType.TEST:
-            if node.resource_type == DbtResourceType.MODEL and test_behavior == TestBehavior.AFTER_EACH:
-                with TaskGroup(dag=dag, group_id=node.name, parent_group=task_group) as model_task_group:
-                    task = create_airflow_task(task_meta, dag, task_group=model_task_group)
-                    test_meta = create_test_task_metadata(
-                        f"{node.name}_test",
-                        execution_mode,
-                        task_args=task_args,
-                        model_name=node.name,
-                        on_warning_callback=on_warning_callback,
-                    )
-                    test_task = create_airflow_task(test_meta, dag, task_group=model_task_group)
-                    task >> test_task
-                    task_or_group = model_task_group
-            else:
-                task_or_group = create_airflow_task(task_meta, dag, task_group=task_group)
-=======
         conversion_function = dbt_resource_converter.get(node.resource_type, generate_task_or_group)
         logger.info(f"Converting <{node.unique_id}> using <{conversion_function.__name__}>")
         task_or_group = conversion_function(
@@ -227,7 +208,6 @@ def build_airflow_graph(
         )
         if task_or_group is not None:
             logger.info(f"Conversion of <{node.unique_id}> was successful!")
->>>>>>> 7b47977 (Allow users to customize how DbtResource should be rendered in Airflow)
             tasks_map[node_id] = task_or_group
 
     # If test_behaviour=="after_all", there will be one test task, run by the end of the DAG
