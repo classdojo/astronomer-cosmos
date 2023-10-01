@@ -419,6 +419,24 @@ class DbtSnapshotLocalOperator(DbtLocalBaseOperator):
         self.base_cmd = ["snapshot"]
 
 
+class DbtSourceLocalOperator(DbtLocalBaseOperator):
+    """
+    Executes a dbt core source freshness command.
+
+    """
+
+    ui_color = "#964C00"
+
+    def __init__(
+        self,
+        on_warning_callback: Callable[..., Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(**kwargs)
+        self.base_cmd = ["source", "freshness"]
+        self.on_warning_callback = on_warning_callback
+
+
 class DbtRunLocalOperator(DbtLocalBaseOperator):
     """
     Executes a dbt core run command.

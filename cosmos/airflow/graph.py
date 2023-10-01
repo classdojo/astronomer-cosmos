@@ -82,6 +82,38 @@ def create_test_task_metadata(
     )
 
 
+def create_source_task_metadata(
+    source_task_name: str,
+    execution_mode: ExecutionMode,
+    task_args: dict[str, Any],
+    on_warning_callback: Callable[..., Any] | None = None,
+    model_name: str | None = None,
+) -> TaskMetadata:
+    """
+    Create the metadata that will be used to instantiate the Airflow Task that will be used to run the Dbt test node.
+
+    :param test_task_name: Name of the Airflow task to be created
+    :param execution_mode: The Cosmos execution mode we're aiming to run the dbt task at (e.g. local)
+    :param task_args: Arguments to be used to instantiate an Airflow Task
+    :param on_warning_callback: A callback function called on warnings with additional Context variables “test_names”
+    and “test_results” of type List.
+    :param model_name: If the test relates to a specific model, the name of the model it relates to
+    :returns: The metadata necessary to instantiate the source dbt node as an Airflow task.
+    """
+    task_args = dict(task_args)
+    task_args["on_warning_callback"] = on_warning_callback
+    if model_name is not None:
+        task_args["models"] = model_name
+    return TaskMetadata(
+        id=source_task_name,
+        operator_class=calculate_operator_class(
+            execution_mode=execution_mode,
+            dbt_class="DbtSource",
+        ),
+        arguments=task_args,
+    )
+
+
 def create_task_metadata(
     node: DbtNode, execution_mode: ExecutionMode, args: dict[str, Any], use_name_as_task_id_prefix: bool = True
 ) -> TaskMetadata | None:
@@ -101,6 +133,7 @@ def create_task_metadata(
         DbtResourceType.SNAPSHOT: "DbtSnapshot",
         DbtResourceType.SEED: "DbtSeed",
         DbtResourceType.TEST: "DbtTest",
+        DbtResourceType.SOURCE: "DbtSource",
     }
     args = {**args, **{"models": node.name}}
 
@@ -185,7 +218,27 @@ def build_airflow_graph(
                         on_warning_callback=on_warning_callback,
                     )
                     test_task = create_airflow_task(test_meta, dag, task_group=model_task_group)
-                    task >> test_task
+
+                    source_freshness_tasks = []
+                    for source in set(node.sources):
+                        source_freshness_tasks.append(
+                            create_airflow_task(
+                                create_source_task_metadata(
+                                    f"{source}.freshness",
+                                    execution_mode,
+                                    task_args=task_args,
+                                    model_name=node.name,
+                                ),
+                                dag,
+                                task_group=model_task_group,
+                            )
+
+                        )
+
+                    if len(source_freshness_tasks) > 0:
+                        source_freshness_tasks >> task >> test_task
+                    else:
+                        task >> test_task
                     task_or_group = model_task_group
             else:
                 task_or_group = create_airflow_task(task_meta, dag, task_group=task_group)

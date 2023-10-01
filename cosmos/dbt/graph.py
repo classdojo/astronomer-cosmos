@@ -50,6 +50,8 @@ class DbtNode:
     file_path: Path
     tags: list[str] = field(default_factory=lambda: [])
     config: dict[str, Any] = field(default_factory=lambda: {})
+    has_test: bool = False
+    sources: list[str] = field(default_factory=lambda: [])
 
 
 class DbtGraph:
@@ -326,6 +328,9 @@ class DbtGraph:
             manifest = json.load(fp)
 
             for unique_id, node_dict in manifest.get("nodes", {}).items():
+                depends_on = node_dict["depends_on"].get("nodes", [])
+                sources = [source for source in depends_on if source.startswith("source")]
+
                 node = DbtNode(
                     name=node_dict["name"],
                     unique_id=unique_id,
@@ -334,6 +339,7 @@ class DbtGraph:
                     file_path=self.project.dir / node_dict["original_file_path"],
                     tags=node_dict["tags"],
                     config=node_dict["config"],
+                    sources=sources,
                 )
                 nodes[node.unique_id] = node
 
