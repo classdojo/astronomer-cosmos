@@ -102,6 +102,7 @@ def create_source_task_metadata(
     """
     task_args = dict(task_args)
     task_args["on_warning_callback"] = on_warning_callback
+    del(task_args["models"])
     if source_name is not None:
         task_args["select"] = f"source:{source_name}"
     return TaskMetadata(
