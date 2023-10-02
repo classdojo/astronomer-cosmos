@@ -87,7 +87,7 @@ def create_source_task_metadata(
     execution_mode: ExecutionMode,
     task_args: dict[str, Any],
     on_warning_callback: Callable[..., Any] | None = None,
-    model_name: str | None = None,
+    source_name: str | None = None,
 ) -> TaskMetadata:
     """
     Create the metadata that will be used to instantiate the Airflow Task that will be used to run the Dbt test node.
@@ -97,13 +97,13 @@ def create_source_task_metadata(
     :param task_args: Arguments to be used to instantiate an Airflow Task
     :param on_warning_callback: A callback function called on warnings with additional Context variables “test_names”
     and “test_results” of type List.
-    :param model_name: If the test relates to a specific model, the name of the model it relates to
+    :param source_name: If the test relates to a specific model, the name of the model it relates to
     :returns: The metadata necessary to instantiate the source dbt node as an Airflow task.
     """
     task_args = dict(task_args)
     task_args["on_warning_callback"] = on_warning_callback
-    if model_name is not None:
-        task_args["models"] = f"source:{model_name}"
+    if source_name is not None:
+        task_args["select"] = f"source:{source_name}"
     return TaskMetadata(
         id=source_task_name,
         operator_class=calculate_operator_class(
@@ -228,7 +228,7 @@ def build_airflow_graph(
                                     f"{source}.freshness",
                                     execution_mode,
                                     task_args=task_args,
-                                    model_name=node.name,
+                                    source_name=source,
                                 ),
                                 dag,
                                 task_group=model_task_group,
