@@ -221,6 +221,8 @@ def build_airflow_graph(
 
                     source_freshness_tasks = []
                     for source in set(node.sources):
+                        replacement_argument_index = task_args.index("--models")
+                        task_args[replacement_argument_index + 1] = f"source:{source}"
                         source_freshness_tasks.append(
                             create_airflow_task(
                                 create_source_task_metadata(
