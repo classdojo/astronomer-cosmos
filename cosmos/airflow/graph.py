@@ -103,7 +103,7 @@ def create_source_task_metadata(
     task_args = dict(task_args)
     task_args["on_warning_callback"] = on_warning_callback
     if model_name is not None:
-        task_args["models"] = model_name
+        task_args["models"] = f"source:{model_name}"
     return TaskMetadata(
         id=source_task_name,
         operator_class=calculate_operator_class(
@@ -221,7 +221,7 @@ def build_airflow_graph(
 
                     source_freshness_tasks = []
                     for source in set(node.sources):
-                        task_args["--models"] = f"source:{source}"
+                        task_args["models"] = f"source:{source}"
                         source_freshness_tasks.append(
                             create_airflow_task(
                                 create_source_task_metadata(
