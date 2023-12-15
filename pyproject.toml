@@ -119,10 +119,16 @@ Documentation = "https://astronomer.github.io/astronomer-cosmos"
 [tool.hatch.version]
 path = "cosmos/__init__.py"
 
+[tool.hatch.build.targets.wheel]
+include = [
+    "/cosmos",
+]
+
 [tool.hatch.build.targets.sdist]
 include = [
     "/cosmos",
 ]
+
 
 ######################################
 # TESTING
